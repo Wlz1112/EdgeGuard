@@ -1,0 +1,15 @@
+[Unit]
+Description=EdgeGuard Suricata engine
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/opt/edgeguard/engine.sh run
+ExecStartPost=/opt/edgeguard/engine.sh ready
+ExecStopPost=/opt/edgeguard/engine.sh cleanup
+UMask=0022
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

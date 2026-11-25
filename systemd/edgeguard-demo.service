@@ -1,0 +1,14 @@
+[Unit]
+Description=EdgeGuard optional HTTP test service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=/etc/edgeguard/settings
+ExecStart=/usr/bin/python3 /opt/edgeguard/demo.py ${DEVICE} ${PORT}
+DynamicUser=yes
+NoNewPrivileges=yes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

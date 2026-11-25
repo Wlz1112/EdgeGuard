@@ -1,0 +1,27 @@
+#!/bin/bash
+set -eu
+conf=/etc/edgeguard
+case "${1:-}" in
+ status)
+   cat "$conf/mode"
+   systemctl --no-pager --full status edgeguard-dashboard edgeguard-engine
+   ;;
+ ids|ips|baseline)
+   [[ $EUID == 0 ]] || { echo "Run with sudo" >&2; exit 1; }
+   exec 9>/run/lock/edgeguard.lock
+   flock 9
+   if [[ $1 != baseline ]]; then
+     suricata -T -c /etc/suricata/suricata.yaml -S "$conf/$1.rules" -l /var/log/edgeguard
+   fi
+   systemctl stop edgeguard-engine
+   if [[ $1 == ips ]] && awk '$1==42 {f=1} END{exit !f}' /proc/net/netfilter/nfnetlink_queue 2>/dev/null; then
+     echo "NFQUEUE 42 is already in use" >&2
+     exit 1
+   fi
+   echo "$1" > "$conf/mode.new"
+   mv "$conf/mode.new" "$conf/mode"
+   if [[ $1 == baseline ]]; then systemctl disable edgeguard-engine
+   else systemctl enable --now edgeguard-engine; fi
+   ;;
+ *) echo "Usage: edgeguard {status|ids|ips|baseline}" >&2; exit 2;;
+esac
